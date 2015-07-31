@@ -56,8 +56,10 @@ beta_l = zeros(row, 1);
 beta_l( lambda >= 1 ) = 1;
 beta_l( lambda < 1 ) = sin(pi*lambda(lambda < 1)/2);
 
-% Partial safety factor for debonding strength
-s_debonding = 0.315*beta_w.*beta_l.*sqrt(E_frp.*sqrt(0.8*f_cu)./t_frp);
+% Partial safety factor for debonding strength: 0.315 is nominal values,
+% while 0.427 is for mean values, see Chen and Teng 2003
+% s_debonding = 0.315*beta_w.*beta_l.*sqrt(E_frp.*sqrt(0.8*f_cu)./t_frp);
+s_debonding = 0.427*beta_w.*beta_l.*sqrt(E_frp.*sqrt(0.8*f_cu)./t_frp);
 
 % 0.8f_frp is used to account for FRP strength reduction at corners
 
