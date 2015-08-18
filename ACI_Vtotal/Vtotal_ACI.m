@@ -59,12 +59,13 @@ switch FRP_tech
     case {'W'}
         ep_fe = 0.004 * ones(Nsim, 1);
         nSmaller = sum( ep_fe<=0.75*ep_fu );
+        nLarger = sum( ep_fe>0.75*ep_fu );
         meanLarger = mean( ep_fu(ep_fe>0.75*ep_fu) );
         stdLarger = std( ep_fu(ep_fe>0.75*ep_fu) );
         covLarger = stdLarger / meanLarger;     
         covSmaller = covLarger;
         ep_fe( ep_fe>0.75*ep_fu ) = 0.75*ep_fu(ep_fe>0.75*ep_fu);
-        ep_fe( ep_fe>0.75*ep_fu ) = normrnd( 0.004, 0.004*covSmaller, nSmaller, 1);
+        ep_fe( ep_fe>0.75*ep_fu ) = normrnd( 0.004, 0.004*covSmaller, nLarger, 1);
 end
 
 f_fe = ep_fe .* E_frp;

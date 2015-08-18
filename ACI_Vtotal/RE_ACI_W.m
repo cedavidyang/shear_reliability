@@ -9,7 +9,7 @@ MEparam = lognfit(ModelError, 0.05);
 
 % Monte Carlo Simulation of Resistance
 IndexHat = 3.5; % target reliability index
-factor = 0.7:0.05:1.00;
+factor = 0.5:0.05:1.00;
 nFactor = length(factor);
 factor = factor';
 LD=[0.25;3];
@@ -89,8 +89,8 @@ parfor i=1:nCase
     
     E_frp_smp = E_frp_nom;
     
-    f_frp_mean = f_frp_nom ./ (1-3*0.15);
-    f_frp_std = 0.15*f_frp_mean;
+    f_frp_mean = f_frp_nom ./ (1-3*0.12);
+    f_frp_std = 0.12*f_frp_mean;
     wblparam = fsolve(@(x) [x(1)*gamma(1+1./x(2)) - f_frp_mean ; x(1).^2 * (gamma(1+2./x(2)) - ( gamma(1+1./x(2)).^2)) - f_frp_std^2],[f_frp_mean;1.2/(f_frp_std/f_frp_mean)], optimset('Display','off'));
     f_frp_smp = wblrnd(wblparam(1), wblparam(2), Nsim, 1);
     

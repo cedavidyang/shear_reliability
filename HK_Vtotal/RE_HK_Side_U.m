@@ -95,8 +95,8 @@ parfor i=1:nCase
     
     E_frp_smp = E_frp_nom;
     
-    f_frp_mean = f_frp_nom ./ (1-1.645*0.15);
-    f_frp_std = 0.15*f_frp_mean;
+    f_frp_mean = f_frp_nom ./ (1-1.645*0.12);
+    f_frp_std = 0.12*f_frp_mean;
     wblparam = fsolve(@(x) [x(1)*gamma(1+1./x(2)) - f_frp_mean ; x(1).^2 * (gamma(1+2./x(2)) - ( gamma(1+1./x(2)).^2)) - f_frp_std^2],[f_frp_mean;1.2/(f_frp_std/f_frp_mean)], optimset('Display','off'));
     f_frp_smp = wblrnd(wblparam(1), wblparam(2), Nsim, 1);
     
