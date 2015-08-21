@@ -1,4 +1,4 @@
-% Reliability analysis Version 2 --- Loading Cases are from Database
+% Reliability of Side and U
 clear; clc;
 % Model Error
 load db_Side
@@ -16,8 +16,8 @@ LD=transpose(0.25:0.25:3.0);
 nLD = length(LD);
 
 load db_design_GB
-[nCase, ~] = size(db_design_GB);
 db_design = db_design_GB;
+[nCase, ~] = size(db_design);
 f_c  = db_design(:, 1);
 b  = db_design(:, 2);
 h  = db_design(:, 3);
@@ -47,7 +47,7 @@ std_RE = zeros(nFactor,1);
 upper_RE = zeros(nFactor,1);
 lower_RE = zeros(nFactor,1);
 
-matlabpool(4)
+matlabpool(6)
 parfor i=1:nCase
     % nominal values
     b_nom = b(i);
@@ -90,8 +90,8 @@ parfor i=1:nCase
     
     E_frp_smp = E_frp_nom;
     
-    f_frp_mean = f_frp_nom ./ (1-1.645*0.15);
-    f_frp_std = 0.15*f_frp_mean;
+    f_frp_mean = f_frp_nom ./ (1-1.645*0.12);
+    f_frp_std = 0.12*f_frp_mean;
     wblparam = fsolve(@(x) [x(1)*gamma(1+1./x(2)) - f_frp_mean ; x(1).^2 * (gamma(1+2./x(2)) - ( gamma(1+1./x(2)).^2)) - f_frp_std^2],[f_frp_mean;1.2/(f_frp_std/f_frp_mean)], optimset('Display','off'));
     f_frp_smp = wblrnd(wblparam(1), wblparam(2), Nsim, 1);
     
@@ -100,6 +100,8 @@ parfor i=1:nCase
     
     f_c_mean = f_c_nom/(1-1.645*0.2);
     f_c_std = 0.2*f_c_mean;
+%     f_c_mean = f_c_nom*1.25;
+%     f_c_std = 0.2*f_c_mean;
     f_c_smp = normrnd(f_c_mean, f_c_std, Nsim, 1);
     
     D_bar_smp = D_bar_nom*ones(Nsim,1);
@@ -176,8 +178,9 @@ parfor i=1:nCase
 end
 matlabpool close;
 
-REdata_GB_SIDE = RE;
-save('REdata_GB_SIDE.mat', 'REdata_GB_SIDE');
+REdata_GB_Side = RE;
+save('REdata_GB_Sid_12Frp_detConc.mat', 'REdata_GB_Side');
+% save('REdata_GB_Side_12Frp_125Conc.mat', 'REdata_GB_Side');
 RE_col = zeros(nLD, nCase);
 for i_factor = 1:nFactor
     RE_col = RE(:, i_factor, :);
@@ -203,4 +206,3 @@ figure;
 plot(factor, norm_RE, 'bo-', 'linewidth', 2, 'markerfacecolor', 'b')
 xlabel('Partial Safety Factor for FRP contribution');
 ylabel('Norm of Reliability Index');
-    

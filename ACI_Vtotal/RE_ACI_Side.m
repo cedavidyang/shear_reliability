@@ -1,8 +1,8 @@
-% Reliability analysis Version 2 --- Loading Cases are from Database
-clear; clc
+% Reliability of Side and U
+clear; clc;
 % Model Error
 load db_Side_ACI
-[Vpre, Vf, ~, ~] = Vtotal_ACI(db_Side, 'Side');
+[Vpre, ~, ~, ~] = Vtotal_ACI(db_Side, 'Side');
 Vexp = db_Side(:, 21);
 ModelError = Vexp ./ Vpre;
 MEparam = lognfit(ModelError, 0.05);
@@ -16,8 +16,8 @@ LD=transpose(0.25:0.25:3.0);
 nLD = length(LD);
 
 load db_design_ACI
-[nCase, ~] = size(db_design_ACI);
 db_design = db_design_ACI;
+[nCase, ~] = size(db_design);
 f_c  = db_design(:, 1);
 b  = db_design(:, 2);
 h  = db_design(:, 3);
@@ -47,7 +47,7 @@ std_RE = zeros(nFactor,1);
 upper_RE = zeros(nFactor,1);
 lower_RE = zeros(nFactor,1);
 
-matlabpool(4)
+matlabpool(6)
 parfor i=1:nCase
     % nominal values
     b_nom = b(i);
@@ -90,8 +90,8 @@ parfor i=1:nCase
     
     E_frp_smp = E_frp_nom;
     
-    f_frp_mean = f_frp_nom ./ (1-3*0.15);
-    f_frp_std = 0.15*f_frp_mean;
+    f_frp_mean = f_frp_nom ./ (1-1.645*0.12);
+    f_frp_std = 0.12*f_frp_mean;
     wblparam = fsolve(@(x) [x(1)*gamma(1+1./x(2)) - f_frp_mean ; x(1).^2 * (gamma(1+2./x(2)) - ( gamma(1+1./x(2)).^2)) - f_frp_std^2],[f_frp_mean;1.2/(f_frp_std/f_frp_mean)], optimset('Display','off'));
     f_frp_smp = wblrnd(wblparam(1), wblparam(2), Nsim, 1);
     
@@ -100,6 +100,8 @@ parfor i=1:nCase
     
     f_c_mean = f_c_nom/(1-1.645*0.2);
     f_c_std = 0.2*f_c_mean;
+%     f_c_mean = f_c_nom*1.25;
+%     f_c_std = 0.2*f_c_mean;
     f_c_smp = normrnd(f_c_mean, f_c_std, Nsim, 1);
     
     D_bar_smp = D_bar_nom*ones(Nsim,1);
@@ -110,7 +112,7 @@ parfor i=1:nCase
     f_s_log_std = sqrt( log( 0.1^2 + 1 ) );
     f_s_log_mean = log( f_s_mean ) - .5*f_s_log_std.^2;
     f_s_smp = lognrnd( f_s_log_mean, f_s_log_std, Nsim, 1);
-    
+        
     % database construction, sample values
     db_smp = zeros(Nsim, 19);
     db_smp(:, 1) = f_c_smp;
@@ -154,9 +156,10 @@ parfor i=1:nCase
     db_mean(:, 16) = t_frp_nom;
     db_mean(:, 17) = f_frp_mean;
     db_mean(:, 18) = w_frp_nom;
-    db_mean(:, 19) = s_frp_nom;
+    db_mean(:, 19) = s_frp_nom;  
     
     [Vtotal, ~, ~, ~] = Vtotal_ACI(db_smp, 'Side');
+
     n_warning = length( find(Vtotal<= 0) );
     if n_warning > 0
         fprintf('Vtotal <= 0, %d times\n', n_warning );
@@ -164,6 +167,7 @@ parfor i=1:nCase
     Vtotal_design = zeros(nFactor, 1);
     RE_tmp = zeros(nLD, nFactor);
     for i_factor = 1:nFactor
+        gamma_frp = 1.40;
         [Vtotal_design(i_factor),~,~,~] = Vtotal_ACI_design(db_mean, 'Side', factor(i_factor));
         for i_LD=1:nLD
             Rparam = [mean(Vtotal), std(Vtotal)/mean(Vtotal), Vtotal_design(i_factor)];
@@ -173,10 +177,11 @@ parfor i=1:nCase
         RE(:, :, i) = RE_tmp;
     end
 end
-matlabpool close
+matlabpool close;
 
-REdata_ACI_SIDE = RE;
-save('REdata_ACI_SIDE.mat', 'REdata_ACI_SIDE');
+REdata_ACI_Side = RE;
+% save('REdata_ACI_Side_12Frp_detConc.mat', 'REdata_ACI_Side');
+save('REdata_ACI_Side_12Frp_detConc.mat', 'REdata_ACI_Side');
 RE_col = zeros(nLD, nCase);
 for i_factor = 1:nFactor
     RE_col = RE(:, i_factor, :);

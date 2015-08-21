@@ -105,6 +105,8 @@ parfor i=1:nCase
     
     f_c_mean = f_c_nom/(1-1.645*0.2);
     f_c_std = 0.2*f_c_mean;
+%     f_c_mean = f_c_nom*1.25;
+%     f_c_std = 0.2*f_c_mean;
     f_c_smp = normrnd(f_c_mean, f_c_std, Nsim, 1);
     
     D_bar_smp = D_bar_nom*ones(Nsim,1);
@@ -191,6 +193,7 @@ matlabpool close;
 
 REdata_ACI_Side_U = RE;
 save('REdata_ACI_Side_U_12Frp_detConc.mat', 'REdata_ACI_Side_U');
+% save('REdata_ACI_Side_U_12Frp_125Conc.mat', 'REdata_ACI_Side_U');
 RE_col = zeros(nLD, nCase);
 for i_factor = 1:nFactor
     RE_col = RE(:, i_factor, :);

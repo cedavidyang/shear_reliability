@@ -1,8 +1,7 @@
-% Reliability analysis Version 2 --- Loading Cases are from Database
-clear; clc
+% Reliability of U
+clear; clc;
 % Model Error
 load db_U
-[ntest, ~] = size(db_U);
 [Vpre, ~, ~, ~] = Vtotal_HK(db_U, 'U');
 Vexp = db_U(:, 21);
 ModelError = Vexp ./ Vpre;
@@ -17,8 +16,8 @@ LD=transpose(0.25:0.25:3.0);
 nLD = length(LD);
 
 load db_design_HK
-[nCase, ~] = size(db_design_HK);
 db_design = db_design_HK;
+[nCase, ~] = size(db_design);
 f_c  = db_design(:, 1);
 b  = db_design(:, 2);
 h  = db_design(:, 3);
@@ -91,8 +90,8 @@ parfor i=1:nCase
     
     E_frp_smp = E_frp_nom;
     
-    f_frp_mean = f_frp_nom ./ (1-1.645*0.15);
-    f_frp_std = 0.15*f_frp_mean;
+    f_frp_mean = f_frp_nom ./ (1-1.645*0.12);
+    f_frp_std = 0.12*f_frp_mean;
     wblparam = fsolve(@(x) [x(1)*gamma(1+1./x(2)) - f_frp_mean ; x(1).^2 * (gamma(1+2./x(2)) - ( gamma(1+1./x(2)).^2)) - f_frp_std^2],[f_frp_mean;1.2/(f_frp_std/f_frp_mean)], optimset('Display','off'));
     f_frp_smp = wblrnd(wblparam(1), wblparam(2), Nsim, 1);
     
@@ -101,6 +100,8 @@ parfor i=1:nCase
     
     f_c_mean = f_c_nom/(1-1.645*0.2);
     f_c_std = 0.2*f_c_mean;
+%     f_c_mean = f_c_nom*1.25;
+%     f_c_std = 0.2*f_c_mean;
     f_c_smp = normrnd(f_c_mean, f_c_std, Nsim, 1);
     
     D_bar_smp = D_bar_nom*ones(Nsim,1);
@@ -155,7 +156,7 @@ parfor i=1:nCase
     db_mean(:, 16) = t_frp_nom;
     db_mean(:, 17) = f_frp_mean;
     db_mean(:, 18) = w_frp_nom;
-    db_mean(:, 19) = s_frp_nom;    
+    db_mean(:, 19) = s_frp_nom;  
     
     [Vtotal, ~, ~, ~] = Vtotal_HK(db_smp, 'U');
     n_warning = length( find(Vtotal<= 0) );
@@ -175,10 +176,11 @@ parfor i=1:nCase
         RE(:, :, i) = RE_tmp;
     end
 end
-matlabpool close
+matlabpool close;
 
 REdata_HK_U = RE;
-save('REdata_HK_U.mat', 'REdata_HK_U');
+save('REdata_HK_U_12Frp_detConc.mat', 'REdata_HK_U');
+% save('REdata_HK_U_12Frp_125Conc.mat', 'REdata_HK_U');
 RE_col = zeros(nLD, nCase);
 for i_factor = 1:nFactor
     RE_col = RE(:, i_factor, :);
@@ -204,4 +206,3 @@ figure;
 plot(factor, norm_RE, 'bo-', 'linewidth', 2, 'markerfacecolor', 'b')
 xlabel('Partial Safety Factor for FRP contribution');
 ylabel('Norm of Reliability Index');
-    

@@ -102,6 +102,8 @@ parfor i=1:nCase
     
     f_c_mean = f_c_nom/(1-1.645*0.2);
     f_c_std = 0.2*f_c_mean;
+%     f_c_mean = f_c_nom*1.25;
+%     f_c_std = 0.2*f_c_mean;
     f_c_smp = normrnd(f_c_mean, f_c_std, Nsim, 1);
     
     D_bar_smp = D_bar_nom*ones(Nsim,1);
@@ -179,7 +181,8 @@ end
 matlabpool close
 
 REdata_HK_W = RE;
-save('REdata_HK_W.mat', 'REdata_HK_W');
+save('REdata_HK_W_12Frp_detConc.mat', 'REdata_HK_W');
+% save('REdata_HK_W_12Frp_125Conc.mat', 'REdata_HK_W');
 RE_col = zeros(nLD, nCase);
 for i_factor = 1:nFactor
     RE_col = RE(:, i_factor, :);

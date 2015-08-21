@@ -1,23 +1,23 @@
-% Reliability analysis Version 2 --- Loading Cases are from Database
-clear; clc
+% Reliability of U
+clear; clc;
 % Model Error
 load db_U_ACI
-[Vpre, ~, ~, ~] = Vtotal_ACI_old(db_U, 'U');
+[Vpre, ~, ~, ~] = Vtotal_ACI(db_U, 'U');
 Vexp = db_U(:, 21);
 ModelError = Vexp ./ Vpre;
 MEparam = lognfit(ModelError, 0.05);
 
 % Monte Carlo Simulation of Resistance
 IndexHat = 3.5; % target reliability index
-factor = 0.7:0.05:1.00;
+factor = 0.5:0.05:1.00;
 nFactor = length(factor);
 factor = factor';
-LD=[3.0];
+LD=transpose(0.25:0.25:3.0);
 nLD = length(LD);
 
 load db_design_ACI
-[nCase, ~] = size(db_design_ACI);
 db_design = db_design_ACI;
+[nCase, ~] = size(db_design);
 f_c  = db_design(:, 1);
 b  = db_design(:, 2);
 h  = db_design(:, 3);
@@ -47,11 +47,9 @@ std_RE = zeros(nFactor,1);
 upper_RE = zeros(nFactor,1);
 lower_RE = zeros(nFactor,1);
 
-matlabpool(4)
+matlabpool(6)
 parfor i=1:nCase
-% for i=1:nCase
-% for i=2703:2703
-%     nominal values
+    % nominal values
     b_nom = b(i);
     h_nom = h(i);
     d_nom = d(i);
@@ -77,14 +75,9 @@ parfor i=1:nCase
     h_std = 6.35;
     h_smp = normrnd(h_mean, h_std, Nsim, 1);
     
-%     d_mean = d_nom - 4.7;
-%     d_std = 12.7;
-%     d_smp = normrnd(d_mean, d_std, Nsim, 1);
-    d_smp = h_smp - (h_nom - d_nom);
-    
-    if sum(d_smp > h_smp) > 0
-        disp('contain unrealistic design case')
-    end
+    d_mean = d_nom - 4.7;
+    d_std = 12.7;
+    d_smp = normrnd(d_mean, d_std, Nsim, 1);
     
     dfrp_smp = h_smp;
     dfrpt_smp = dfrpt_nom;
@@ -97,8 +90,8 @@ parfor i=1:nCase
     
     E_frp_smp = E_frp_nom;
     
-    f_frp_mean = f_frp_nom ./ (1-3*0.15);
-    f_frp_std = 0.15*f_frp_mean;
+    f_frp_mean = f_frp_nom ./ (1-1.645*0.12);
+    f_frp_std = 0.12*f_frp_mean;
     wblparam = fsolve(@(x) [x(1)*gamma(1+1./x(2)) - f_frp_mean ; x(1).^2 * (gamma(1+2./x(2)) - ( gamma(1+1./x(2)).^2)) - f_frp_std^2],[f_frp_mean;1.2/(f_frp_std/f_frp_mean)], optimset('Display','off'));
     f_frp_smp = wblrnd(wblparam(1), wblparam(2), Nsim, 1);
     
@@ -107,6 +100,8 @@ parfor i=1:nCase
     
     f_c_mean = f_c_nom/(1-1.645*0.2);
     f_c_std = 0.2*f_c_mean;
+%     f_c_mean = f_c_nom*1.25;
+%     f_c_std = 0.2*f_c_mean;
     f_c_smp = normrnd(f_c_mean, f_c_std, Nsim, 1);
     
     D_bar_smp = D_bar_nom*ones(Nsim,1);
@@ -117,7 +112,7 @@ parfor i=1:nCase
     f_s_log_std = sqrt( log( 0.1^2 + 1 ) );
     f_s_log_mean = log( f_s_mean ) - .5*f_s_log_std.^2;
     f_s_smp = lognrnd( f_s_log_mean, f_s_log_std, Nsim, 1);
-    
+        
     % database construction, sample values
     db_smp = zeros(Nsim, 19);
     db_smp(:, 1) = f_c_smp;
@@ -139,7 +134,7 @@ parfor i=1:nCase
     db_smp(:, 17) = f_frp_smp;
     db_smp(:, 18) = w_frp_smp;
     db_smp(:, 19) = s_frp_smp;
-    db_smp( f_c_smp <= 0, : ) = []; 
+    db_smp( f_c_smp <= 0, : ) = [];
     
     % mean and nomonal values
     db_mean = zeros(1, 19);
@@ -161,9 +156,10 @@ parfor i=1:nCase
     db_mean(:, 16) = t_frp_nom;
     db_mean(:, 17) = f_frp_mean;
     db_mean(:, 18) = w_frp_nom;
-    db_mean(:, 19) = s_frp_nom;
+    db_mean(:, 19) = s_frp_nom;  
     
     [Vtotal, ~, ~, ~] = Vtotal_ACI(db_smp, 'U');
+
     n_warning = length( find(Vtotal<= 0) );
     if n_warning > 0
         fprintf('Vtotal <= 0, %d times\n', n_warning );
@@ -171,28 +167,22 @@ parfor i=1:nCase
     Vtotal_design = zeros(nFactor, 1);
     RE_tmp = zeros(nLD, nFactor);
     for i_factor = 1:nFactor
+        gamma_frp = 1.40;
         [Vtotal_design(i_factor),~,~,~] = Vtotal_ACI_design(db_mean, 'U', factor(i_factor));
         for i_LD=1:nLD
             Rparam = [mean(Vtotal), std(Vtotal)/mean(Vtotal), Vtotal_design(i_factor)];
 %             Rparam = [mean(Vs+Vc), std(Vs+Vc)/mean(Vs+Vc), Vs_design+Vc_design];
-            Rparam(2) = 0.15;
             RE_tmp(i_LD, i_factor) = form_ACI(MEparam, LD(i_LD), Rparam );
-            tmp_beta = RE_tmp(i_LD, i_factor);
-            if RE_tmp(i_LD, i_factor)> 5.0
-                fprintf('suspicious large beta, beta=%f, Vcov=%f, iCase=%d\n', [tmp_beta, Rparam(2), i])
-            elseif RE_tmp(i_LD, i_factor)<3.0
-                fprintf('suspicious small beta, beta=%f, Vcov=%f, iCase=%d\n', [tmp_beta, Rparam(2), i])    
-            end
         end
         RE(:, :, i) = RE_tmp;
     end
 end
-matlabpool close
+matlabpool close;
 
 REdata_ACI_U = RE;
-save('REdata_ACI_U2.mat', 'REdata_ACI_U');
+% save('REdata_ACI_U_12Frp_detConc.mat', 'REdata_ACI_U');
+save('REdata_ACI_U_12Frp_detConc.mat', 'REdata_ACI_U');
 RE_col = zeros(nLD, nCase);
-
 for i_factor = 1:nFactor
     RE_col = RE(:, i_factor, :);
     RE_col = RE_col(:);
@@ -200,19 +190,8 @@ for i_factor = 1:nFactor
     norm_RE(i_factor) = mean((RE_col-IndexHat).^2);
     mean_RE(i_factor) = mean(RE_col);
     std_RE(i_factor) = std(RE_col);
-%     upper_RE(i_factor) = prctile(RE_col, 95);
-%     lower_RE(i_factor) = prctile(RE_col, 5);
-    upper_RE(i_factor) = max(RE_col);
-    lower_RE(i_factor) = min(RE_col);    
-    
-    nBeta = length(RE_col);
-    if i_factor == 1
-        betaData = RE_col;
-        iFactor = factor(i_factor)*ones(nBeta, 1);
-    else
-        betaData = [betaData; RE_col];
-        iFactor = [iFactor; factor(i_factor)*ones(nBeta, 1)];
-    end
+    upper_RE(i_factor) = prctile(RE_col, 95);
+    lower_RE(i_factor) = prctile(RE_col, 5);
 end
 
 plot(factor, mean_RE, 'MarkerFaceColor','b','Marker','o',...
