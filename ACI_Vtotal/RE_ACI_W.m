@@ -38,7 +38,7 @@ w_frp  = db_design(:, 18);
 s_frp  = db_design(:, 19);
 
 nLC = nCase*nLD;
-Nsim = 100;
+Nsim = 1e4;
 RE = zeros(nLD, nFactor, nCase);
 norm_RE = zeros(nFactor,1);
 mean_RE = zeros(nFactor,1);
