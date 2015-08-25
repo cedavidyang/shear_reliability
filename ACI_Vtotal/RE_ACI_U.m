@@ -2,7 +2,7 @@
 clear; clc;
 % Model Error
 load db_U_ACI
-[Vpre, ~, ~, ~] = Vtotal_ACI(db_U, 'U');
+[Vpre, ~, ~, ~] = Vtotal_ACI_ME(db_U, 'U');
 Vexp = db_U(:, 21);
 ModelError = Vexp ./ Vpre;
 MEparam = lognfit(ModelError, 0.05);

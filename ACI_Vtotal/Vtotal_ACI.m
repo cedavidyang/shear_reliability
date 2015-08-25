@@ -43,29 +43,37 @@ switch FRP_tech
         k2( k2<0 ) = 0;
         kv = k1.*k2.*Le ./ (11900*ep_fu);
         
-        nLargeKv = sum(kv>0.75);
-        meanKv = mean( kv(kv<=0.75) );
-        stdKv = std( kv(kv<=0.75) );
-        covKv = stdKv / meanKv;
-        kv( kv>0.75 ) = normrnd(0.75, 0.75*covKv, nLargeKv, 1);
+%         nLargeKv = sum(kv>0.75);
+%         meanKv = mean( kv(kv<=0.75) );
+%         stdKv = std( kv(kv<=0.75) );
+%         covKv = stdKv / meanKv;
         
+        covKv =  mean(kv) / std(kv);
+        kv( kv>0.75 ) = normrnd(0.75, 0.75*covKv, sum(kv>0.75), 1);
         ep_fe = kv .* ep_fu;
-        nLargeEp = sum( ep_fe>0.004 );
+        
+%         nLargeEp = sum( ep_fe>0.004 );
 %         meanEp = mean( ep_fe(ep_fe<=0.004) );
 %         stdEp = std( ep_fe(ep_fe<=0.004) );
-        covEp = 0.20;
+%         covEp = 0.20;
+        covEp = std(ep_fu) / mean(ep_fu);
         ep_fe( ep_fe>0.004 ) = normrnd(0.004, 0.004*covEp, nLargeEp, 1);
               
     case {'W'}
-        ep_fe = 0.004 * ones(Nsim, 1);
-        nSmaller = sum( ep_fe<=0.75*ep_fu );
-        nLarger = sum( ep_fe>0.75*ep_fu );
-        meanLarger = mean( ep_fu(ep_fe>0.75*ep_fu) );
-        stdLarger = std( ep_fu(ep_fe>0.75*ep_fu) );
-        covLarger = stdLarger / meanLarger;     
-        covSmaller = covLarger;
-        ep_fe( ep_fe>0.75*ep_fu ) = 0.75*ep_fu(ep_fe>0.75*ep_fu);
-        ep_fe( ep_fe>0.75*ep_fu ) = normrnd( 0.004, 0.004*covSmaller, nLarger, 1);
+        ep_cov = std(ep_fu) / mean(ep_fu);
+        ep_fe = normrnd( 0.004, 0.004*ep_cov, Nsim, 1);
+        ep_fe( ep_fe<0 ) = 0;
+        ep_fe(0.75*ep_fu<0.004) = 0.75*ep_fu(0.75*ep_fu<0.004);
+        
+%         ep_fe = 0.004 * ones(Nsim, 1);
+%         nLarger = sum( 0.75*ep_fu>=ep_fe );
+%         meanSmaller = mean( ep_fu(0.75*ep_fu<ep_fe) );
+%         stdSmaller = std( ep_fu(0.75*ep_fu<ep_fe) );
+%         covSmaller = stdSmaller / meanSmaller;  
+%         index1 = 0.75*ep_fu<ep_fe;
+%         index2 = 0.75*ep_fu>=ep_fe;
+%         ep_fe( index1 ) = 0.75*ep_fu(index1);
+%         ep_fe( index2 ) = normrnd( 0.004, 0.004*covSmaller, nLarger, 1);
 end
 
 f_fe = ep_fe .* E_frp;
